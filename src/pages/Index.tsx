@@ -37,7 +37,11 @@ const moodConfig: Record<Mood, { icon: string; color: string; label: string }> =
 
 const API_URL = 'https://functions.poehali.dev/cb4214ae-b9b8-415c-8d30-7443f34a3097';
 
-export default function Index() {
+interface IndexProps {
+  onLogout?: () => void;
+}
+
+export default function Index({ onLogout }: IndexProps) {
   const [currentMood, setCurrentMood] = useState<Mood>('calm');
   const [diaryText, setDiaryText] = useState('');
   const [breathCount, setBreathCount] = useState(0);
@@ -51,10 +55,13 @@ export default function Index() {
 
   const loadDiaryEntries = async () => {
     try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id || '1';
+      
       const response = await fetch(API_URL, {
         method: 'GET',
         headers: {
-          'X-User-Id': '1'
+          'X-User-Id': userId.toString()
         }
       });
       const data = await response.json();
@@ -71,11 +78,14 @@ export default function Index() {
 
     setIsSaving(true);
     try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const userId = user.id || '1';
+      
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-Id': '1'
+          'X-User-Id': userId.toString()
         },
         body: JSON.stringify({
           mood: currentMood,
@@ -133,8 +143,16 @@ export default function Index() {
               <Button variant="ghost" size="icon">
                 <Icon name="Bell" size={20} />
               </Button>
+              {onLogout && (
+                <Button variant="ghost" size="sm" onClick={onLogout}>
+                  <Icon name="LogOut" size={16} className="mr-2" />
+                  Выйти
+                </Button>
+              )}
               <Avatar>
-                <AvatarFallback className="bg-primary text-primary-foreground">Я</AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {JSON.parse(localStorage.getItem('user') || '{}').name?.[0]?.toUpperCase() || 'Я'}
+                </AvatarFallback>
               </Avatar>
             </div>
           </div>

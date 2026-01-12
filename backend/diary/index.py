@@ -44,7 +44,7 @@ def handler(event: dict, context) -> dict:
         if method == 'GET':
             cursor.execute("""
                 SELECT id, mood, entry_text, created_at 
-                FROM diary_entries 
+                FROM t_p66030129_mental_health_app_1.diary_entries 
                 WHERE user_id = %s 
                 ORDER BY created_at DESC 
                 LIMIT 20
@@ -91,7 +91,7 @@ def handler(event: dict, context) -> dict:
                 }
             
             cursor.execute("""
-                INSERT INTO diary_entries (user_id, mood, entry_text, created_at)
+                INSERT INTO t_p66030129_mental_health_app_1.diary_entries (user_id, mood, entry_text, created_at)
                 VALUES (%s, %s, %s, %s)
                 RETURNING id, created_at
             """, (user_id, mood, text, datetime.now()))
@@ -99,11 +99,11 @@ def handler(event: dict, context) -> dict:
             result = cursor.fetchone()
             
             cursor.execute("""
-                INSERT INTO user_progress (user_id, diary_count, updated_at)
+                INSERT INTO t_p66030129_mental_health_app_1.user_progress (user_id, diary_count, updated_at)
                 VALUES (%s::integer, 1, %s)
                 ON CONFLICT (user_id) 
                 DO UPDATE SET 
-                    diary_count = user_progress.diary_count + 1,
+                    diary_count = t_p66030129_mental_health_app_1.user_progress.diary_count + 1,
                     updated_at = %s
             """, (int(user_id), datetime.now(), datetime.now()))
             
