@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Icon from '@/components/ui/icon';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,17 +35,64 @@ const moodConfig: Record<Mood, { icon: string; color: string; label: string }> =
   stressed: { icon: 'Zap', color: 'bg-destructive text-destructive-foreground', label: 'Стресс' }
 };
 
+const API_URL = 'https://functions.poehali.dev/cb4214ae-b9b8-415c-8d30-7443f34a3097';
+
 export default function Index() {
   const [currentMood, setCurrentMood] = useState<Mood>('calm');
   const [diaryText, setDiaryText] = useState('');
   const [breathCount, setBreathCount] = useState(0);
   const [isBreathing, setIsBreathing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([]);
 
-  const [diaryEntries] = useState<DiaryEntry[]>([
-    { id: 1, date: '10 января', mood: 'happy', text: 'Сегодня был прекрасный день! Встретилась с подругой, много смеялись.' },
-    { id: 2, date: '9 января', mood: 'anxious', text: 'Чувствую волнение перед важной встречей завтра.' },
-    { id: 3, date: '8 января', mood: 'calm', text: 'Провела день в тишине, читала книгу. Очень спокойно на душе.' }
-  ]);
+  useEffect(() => {
+    loadDiaryEntries();
+  }, []);
+
+  const loadDiaryEntries = async () => {
+    try {
+      const response = await fetch(API_URL, {
+        method: 'GET',
+        headers: {
+          'X-User-Id': '1'
+        }
+      });
+      const data = await response.json();
+      if (data.entries) {
+        setDiaryEntries(data.entries);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки записей:', error);
+    }
+  };
+
+  const saveDiaryEntry = async () => {
+    if (!diaryText.trim()) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': '1'
+        },
+        body: JSON.stringify({
+          mood: currentMood,
+          text: diaryText
+        })
+      });
+
+      if (response.ok) {
+        setDiaryText('');
+        await loadDiaryEntries();
+      }
+    } catch (error) {
+      console.error('Ошибка сохранения записи:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const [chatMessages] = useState<ChatMessage[]>([
     { id: 1, user: 'Анна', avatar: 'A', message: 'Девочки, как справляетесь с тревожностью? Последнее время очень накрыло', time: '14:23' },
@@ -147,9 +194,13 @@ export default function Index() {
                     onChange={(e) => setDiaryText(e.target.value)}
                     className="min-h-[120px]"
                   />
-                  <Button className="w-full sm:w-auto">
+                  <Button 
+                    className="w-full sm:w-auto" 
+                    onClick={saveDiaryEntry}
+                    disabled={isSaving || !diaryText.trim()}
+                  >
                     <Icon name="Save" size={16} className="mr-2" />
-                    Сохранить запись
+                    {isSaving ? 'Сохраняем...' : 'Сохранить запись'}
                   </Button>
                 </div>
               </CardContent>
